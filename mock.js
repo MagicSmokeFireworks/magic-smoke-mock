@@ -48,31 +48,53 @@ var fc5 = 0;
 var fc6 = 0;
 var fc7 = 0;
 
+var imp_no_match = 3000;
+var imp_match = 1500;
+var imp_low = 500;
+
+var m0 = imp_match;
+var m1 = imp_match;
+var m2 = imp_match;
+var m3 = imp_match;
+var m4 = imp_match;
+var m5 = imp_match;
+var m6 = imp_match;
+var m7 = imp_match;
+
+
 var fire_channel = function(channel) {
 	console.log('firing channel ' + channel);
 	if (channel == '0') {
 		fc0 = fc0 + 1;
+		m0 = imp_no_match;
 	}
 	else if (channel == '1') {
 		fc1 = fc1 + 1;
+		m1 = imp_no_match;
 	}
 	else if (channel == '2') {
 		fc2 = fc2 + 1;
+		m2 = imp_no_match;
 	}
 	else if (channel == '3') {
 		fc3 = fc3 + 1;
+		m3 = imp_no_match;
 	}
 	else if (channel == '4') {
 		fc4 = fc4 + 1;
+		m4 = imp_no_match;
 	}
 	else if (channel == '5') {
 		fc5 = fc5 + 1;
+		m5 = imp_no_match;
 	}
 	else if (channel == '6') {
 		fc6 = fc6 + 1;
+		m6 = imp_no_match;
 	}
 	else if (channel == '7') {
 		fc7 = fc7 + 1;
+		m7 = imp_no_match;
 	}
 };
 
@@ -134,14 +156,14 @@ var sendTelem = setInterval(function() {
 			'sw_arm': sw_arm,
 			'hw_arm': 'ARMED',
 			'wifi_rssi': '0',
-			'r0': '0',
-			'r1': '0',
-			'r2': '0',
-			'r3': '0',
-			'r4': '0',
-			'r5': '0',
-			'r6': '0',
-			'r7': '0',
+			'r0': m0,
+			'r1': m1,
+			'r2': m2,
+			'r3': m3,
+			'r4': m4,
+			'r5': m5,
+			'r6': m6,
+			'r7': m7,
 			'fc0': fc0,
 			'fc1': fc1,
 			'fc2': fc2,
