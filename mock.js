@@ -98,9 +98,14 @@ app.post('/disarm', function(req, res) {
 
 app.post('/fire*', function(req, res) {
 	console.log(req.originalUrl);
-	var chans = req.originalUrl.replace(/^\/fire/,'');
-	for (var i = 0; i < chans.length; i++) {
-		fire_channel(chans.charAt(i));
+	if (sw_arm != '1') {
+		console.log('SW DISARMED: will not respect fire command');
+	}
+	else {
+		var chans = req.originalUrl.replace(/^\/fire/,'');
+		for (var i = 0; i < chans.length; i++) {
+			fire_channel(chans.charAt(i));
+		}
 	}
 	command_count = command_count + 1;
 	res.end();
