@@ -1,0 +1,11 @@
+{
+  "name": "magic-smoke-mock",
+  "version": "0.1.0",
+  "description": "Mock board on network for test purposes",
+  "dependencies": {
+    "socket.io": "^1.7.3",
+    "body-parser": "^1.17.2",
+    "express": "^4.14.0",
+    "pug": "^1.11.0"
+  }
+}
