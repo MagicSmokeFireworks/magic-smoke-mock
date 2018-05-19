@@ -3,19 +3,19 @@ var express = require('express');
 var app = express();
 
 var net = require('net');
-
-var httpx = require('http').Server(app);
-var io = require('socket.io')(httpx);
 var http = require('http');
 
+var httpserver = require('http').Server(app);
+var io = require('socket.io')(httpserver);
+
 var bodyParser = require('body-parser');
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
 
 var fs = require('fs');
 var contents = fs.readFileSync('boardinfo.json');
 var boardinfo = JSON.parse(contents);
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 
 io.on('connection', function(socket) {
 	console.log('a user connected');
@@ -28,13 +28,11 @@ app.set('view engine', 'pug');
 
 app.use(express.static('static'));
 
+
+
 var boardKey = process.argv[2];
-var boardID = 0
-for (key in boardinfo) {
-	if (key === boardKey) {
-		boardID = boardinfo[key].id;
-	}
-}
+var boardID = boardinfo[boardKey].id;
+var boardName = boardinfo[boardKey].name;
 var port = process.argv[3];
 
 var sw_arm = '0';
@@ -61,6 +59,60 @@ var m5 = imp_match;
 var m6 = imp_match;
 var m7 = imp_match;
 
+
+const server = net.createServer((c) => {
+
+	console.log('client connected');
+
+	// get commands out of the data field
+	c.on('data', (buf) => {
+
+		console.log('data: ' + buf);
+
+		cmd = buf.toString('utf8');
+
+		if (cmd == 'identify') {
+			console.log('identify: ' + boardName);
+			command_count = command_count + 1;
+		}
+		else if (cmd == 'arm') {
+			console.log('software ARM');
+			command_count = command_count + 1;
+			sw_arm = '1';
+		}
+		else if (cmd == 'disarm') {
+			console.log('software DISARM');
+			command_count = command_count + 1;
+			sw_arm = '0';
+		}
+		else if (cmd.startsWith('fire')) {
+			if (sw_arm != '1') {
+				console.log('SW DISARMED: will not respect fire command');
+			}
+			else {
+				var chans = cmd.replace(/^fire/,'');
+				for (var i = 0; i < chans.length; i++) {
+					fire_channel(chans.charAt(i));
+				}
+			}
+		}
+		else {
+			console.log('unknown command: ' + cmd);
+		}
+	});
+
+	c.on('end', () => {
+		console.log('client disconnected');
+	});
+
+	// repeat data back to client
+	c.pipe(c);
+
+});
+
+server.on('error', (err) => {
+	throw err;
+});
 
 var fire_channel = function(channel) {
 	console.log('firing channel ' + channel);
@@ -98,6 +150,7 @@ var fire_channel = function(channel) {
 	}
 };
 
+/*
 app.post('/identify', function(req, res) {
 	console.log('identify');
 	command_count = command_count + 1;
@@ -132,10 +185,11 @@ app.post('/fire*', function(req, res) {
 	command_count = command_count + 1;
 	res.end();
 });
+*/
 
 app.get('/', function(req, res) {
 	console.log('home');
-	res.render('home', {});
+	res.render('home', {name: boardName});
 })
 
 
@@ -190,8 +244,12 @@ var sendTelem = setInterval(function() {
 
 }, 2000);
 
+var httpport = parseInt(port)+1000;
+httpserver.listen(httpport, function() {
+	console.log("HTTP server listening on *:"+httpport);
+});
 
-httpx.listen(port, function() {
-	console.log("Listening on *:"+port);
+server.listen(port, () => {
+	console.log("Net server bound on *:" + port);
 });
 

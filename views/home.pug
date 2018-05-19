@@ -2,6 +2,8 @@ html
 	head
 		title Magic Mock
 		link(href='/css/generic.css', rel='stylesheet')
+		script(src='/socket.io/socket.io.js')
+		script(src='/javascripts/socket_hookups.js')
 	body
 		header
 			h1= "Magic Mock"
@@ -9,6 +11,7 @@ html
 			section(class="hero")
 				div(class="hero-content")
 					hr
+					h2 #{ name }
 					div.italics
 						h2.
 							I know it's illegal, but it's the weekend
