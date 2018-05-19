@@ -4,6 +4,7 @@ html
 		link(href='/css/generic.css', rel='stylesheet')
 		script(src='/socket.io/socket.io.js')
 		script(src='/javascripts/socket_hookups.js')
+		script(src='/javascripts/commands.js')
 	body
 		header
 			h1= "Magic Mock"
@@ -12,6 +13,24 @@ html
 				div(class="hero-content")
 					hr
 					h2 #{ name }
-					div.italics
-						h2.
-							I know it's illegal, but it's the weekend
+					hr
+					table
+						thead
+							tr
+								th Battery Connection
+								th Power Switch
+								th HW Arm Switch
+						tbody
+							tr
+								td
+									div(id="battery_connection")= state.battery
+									button(class="buttonsmall" onclick="connectBattery()") Connect Battery
+									button(class="buttonsmall" onclick="disconnectBattery()") Disconnect Battery
+								td
+									div(id="power_switch")= state.power_switch
+									button(class="buttonsmall" onclick="powerOn()") Turn Power On
+									button(class="buttonsmall" onclick="powerOff()") Turn Power Off
+								td
+									div(id="arm_switch")= state.arm_switch
+									button(class="buttonsmall" onclick="hardwareArm()") Arm Hardware
+									button(class="buttonsmall" onclick="hardwareDisarm()") Disarm Hardware
