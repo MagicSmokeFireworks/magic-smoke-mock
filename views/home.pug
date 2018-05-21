@@ -13,6 +13,8 @@ html
 				div(class="hero-content")
 					hr
 					h2 #{ name }
+					button(class="buttontiny" onclick="resetBoard()") Reset Board
+
 					hr
 					table
 						thead
@@ -23,14 +25,102 @@ html
 						tbody
 							tr
 								td
-									div(id="battery_connection")= state.battery
-									button(class="buttonsmall" onclick="connectBattery()") Connect Battery
-									button(class="buttonsmall" onclick="disconnectBattery()") Disconnect Battery
+									div(class="normal_status" id="battery_connection")= state.battery
 								td
-									div(id="power_switch")= state.power_switch
-									button(class="buttonsmall" onclick="powerOn()") Turn Power On
-									button(class="buttonsmall" onclick="powerOff()") Turn Power Off
+									div(class="normal_status" id="power_switch")= state.power_switch
 								td
-									div(id="arm_switch")= state.arm_switch
-									button(class="buttonsmall" onclick="hardwareArm()") Arm Hardware
-									button(class="buttonsmall" onclick="hardwareDisarm()") Disarm Hardware
+									div(class="normal_status" id="arm_switch")= state.arm_switch
+							tr
+								td
+									button(class="buttontiny" onclick="connectBattery()") Connect Battery
+									button(class="buttontiny" onclick="disconnectBattery()") Disconnect Battery
+								td
+									button(class="buttontiny" onclick="powerOn()") Turn Power On
+									button(class="buttontiny" onclick="powerOff()") Turn Power Off
+								td
+									button(class="buttontiny" onclick="hardwareArm()") Arm Hardware
+									button(class="buttontiny" onclick="hardwareDisarm()") Disarm Hardware
+					
+					hr
+					table
+						thead
+							tr
+								th HW Arm Sense
+								th Uplink (Commanding)
+								th Downlink (Telemetry)
+						tbody
+							tr
+								td
+									div(class="normal_status" id="arm_sense")= state.arm_sense
+								td
+									div(class="normal_status" id="uplink")= state.uplink
+								td
+									div(class="normal_status" id="downlink")= state.downlink
+							tr
+								td
+									button(class="buttontiny" onclick="armSenseGood()") Good
+									button(class="buttontiny" onclick="armSenseBad()") Bad
+								td
+									button(class="buttontiny" onclick="uplinkGood()") Good
+									button(class="buttontiny" onclick="uplinkBad()") Bad
+								td
+									button(class="buttontiny" onclick="downlinkGood()") Good
+									button(class="buttontiny" onclick="downlinkBad()") Bad
+					each i in [0,1,2,3,4,5,6,7]
+						hr
+						table
+							thead
+								tr
+									th Channel
+									th Match Status
+									th Match Response
+									th Sense Circuitry
+									th FET Functionality
+							tbody
+								tr
+									td
+										h2= i
+									td
+										table
+											tbody
+												tr
+													td
+														div(class="normal_status" id="match_status_"+i)= state.channels[i].match_status
+												tr
+													td
+														button(class="buttontiny" onclick="matchNone("+i+")") None
+														button(class="buttontiny" onclick="matchLow("+i+")") Low
+														button(class="buttontiny" onclick="matchHigh("+i+")") High
+														button(class="buttontiny" onclick="matchGood("+i+")") Good
+									td
+										table
+											tbody
+												tr
+													td
+														div(class="normal_status" id="match_response_"+i)= state.channels[i].match_response
+												tr
+													td
+														button(class="buttontiny" onclick="matchRespondOpen("+i+")") Open
+														button(class="buttontiny" onclick="matchRespondLow("+i+")") Low
+									td
+										table
+											tbody
+												tr
+													td
+														div(class="normal_status" id="match_sense_"+i)= state.channels[i].match_sense
+												tr
+													td
+														button(class="buttontiny" onclick="matchSenseGood("+i+")") Good
+														button(class="buttontiny" onclick="matchSenseBad("+i+")") Bad
+									td
+										table
+											tbody
+												tr
+													td
+														div(class="normal_status" id="match_fet_"+i)= state.channels[i].match_fet
+												tr
+													td
+														button(class="buttontiny" onclick="matchFETGood("+i+")") Good
+														button(class="buttontiny" onclick="matchFETBad("+i+")") Bad
+					hr
+

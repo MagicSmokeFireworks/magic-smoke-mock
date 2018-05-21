@@ -34,32 +34,20 @@ app.use(express.static('static'));
 var boardKey = process.argv[2];
 var boardID = boardinfo[boardKey].id;
 var boardName = boardinfo[boardKey].name;
-var port = process.argv[3];
+var httpPort = process.argv[3];
+var netPort = process.argv[4];
 
 var sw_arm = '0';
 var hw_arm = 'ARMED';
 var command_count = 0;
-var fc0 = 0;
-var fc1 = 0;
-var fc2 = 0;
-var fc3 = 0;
-var fc4 = 0;
-var fc5 = 0;
-var fc6 = 0;
-var fc7 = 0;
+
+var fc = [0,0,0,0,0,0,0,0];
 
 var imp_no_match = 3000;
 var imp_match = 1500;
 var imp_low = 500;
 
-var m0 = imp_match;
-var m1 = imp_match;
-var m2 = imp_match;
-var m3 = imp_match;
-var m4 = imp_match;
-var m5 = imp_match;
-var m6 = imp_match;
-var m7 = imp_match;
+var m = [imp_match,imp_match,imp_match,imp_match,imp_match,imp_match,imp_match,imp_match];
 
 
 const server = net.createServer((c) => {
@@ -73,7 +61,16 @@ const server = net.createServer((c) => {
 
 		cmd = buf.toString('utf8');
 
-		// TODO ignore commands when powered off
+		// ignore commands when powered off
+		if (boardState.battery != 'connected') {
+			return;
+		}
+		if (boardState.power_switch != 'on') {
+			return;
+		}
+		if (boardState.uplink != 'good') {
+			return;
+		}
 
 		if (cmd == 'identify') {
 			console.log('identify: ' + boardName);
@@ -118,95 +115,119 @@ server.on('error', (err) => {
 	throw err;
 });
 
-
-var fire_channel = function(channel) {
-	console.log('firing channel ' + channel);
-	if (channel == '0') {
-		fc0 = fc0 + 1;
-		m0 = imp_no_match;
-	}
-	else if (channel == '1') {
-		fc1 = fc1 + 1;
-		m1 = imp_no_match;
-	}
-	else if (channel == '2') {
-		fc2 = fc2 + 1;
-		m2 = imp_no_match;
-	}
-	else if (channel == '3') {
-		fc3 = fc3 + 1;
-		m3 = imp_no_match;
-	}
-	else if (channel == '4') {
-		fc4 = fc4 + 1;
-		m4 = imp_no_match;
-	}
-	else if (channel == '5') {
-		fc5 = fc5 + 1;
-		m5 = imp_no_match;
-	}
-	else if (channel == '6') {
-		fc6 = fc6 + 1;
-		m6 = imp_no_match;
-	}
-	else if (channel == '7') {
-		fc7 = fc7 + 1;
-		m7 = imp_no_match;
+var sync_imps = function(channel) {
+	for (var i = 0; i < 8; i++) {
+		if (boardState.channels[i].match_status == 'good') {
+			m[i] = imp_match;
+		}
+		else if (boardState.channels[i].match_status == 'high') {
+			m[i] = imp_no_match;
+		}
+		else if (boardState.channels[i].match_status == 'low') {
+			m[i] = imp_low;
+		}
+		else {
+			m[i] = imp_no_match;
+		}
 	}
 };
 
-/*
-app.post('/identify', function(req, res) {
-	console.log('identify');
-	command_count = command_count + 1;
-	res.end();
-});
-
-app.post('/arm', function(req, res) {
-	console.log('arm');
-	sw_arm = '1';
-	command_count = command_count + 1;
-	res.end();
-});
-
-app.post('/disarm', function(req, res) {
-	console.log('disarm');
-	sw_arm = '0';
-	command_count = command_count + 1;
-	res.end();
-});
-
-app.post('/fire*', function(req, res) {
-	console.log(req.originalUrl);
-	if (sw_arm != '1') {
-		console.log('SW DISARMED: will not respect fire command');
-	}
-	else {
-		var chans = req.originalUrl.replace(/^\/fire/,'');
-		for (var i = 0; i < chans.length; i++) {
-			fire_channel(chans.charAt(i));
+var fire_channel = function(channel) {
+	console.log('firing channel ' + channel);
+	var ichan = parseInt(channel);
+	fc[ichan] = fc[ichan] + 1;
+	if (boardState.arm_switch == 'armed') {
+		if (boardState.channels[ichan].match_fet == 'good') {
+			if (boardState.channels[ichan].match_response == 'open') {
+				boardState.channels[ichan].match_status = 'none';
+				m[ichan] = imp_no_match;
+			}
+			else {
+				boardState.channels[ichan].match_status = 'low';
+				m[ichan] = imp_low;
+			}
 		}
 	}
-	command_count = command_count + 1;
-	res.end();
-});
-*/
+	io.emit('fresh state', boardState);
+};
 
-var boardState = {battery: 'connected', uplink: 'good', power_switch: 'on', arm_switch: 'armed'};
+var boardState = {
+	battery: 'connected',
+	power_switch: 'on',
+	arm_switch: 'armed',
+	arm_sense: 'good',
+	uplink: 'good',
+	downlink: 'good',
+	channels: [
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		},
+		{
+			match_status: 'good',
+			match_response: 'open',
+			match_sense: 'good',
+			match_fet: 'good'
+		}
+	]
+};
 
 var reset_board = function() {
 	sw_arm = '0';
 	command_count = 0;
-	fc0 = 0;
-	fc1 = 0;
-	fc2 = 0;
-	fc3 = 0;
-	fc4 = 0;
-	fc5 = 0;
-	fc6 = 0;
-	fc7 = 0;
+	fc[0] = 0;
+	fc[1] = 0;
+	fc[2] = 0;
+	fc[3] = 0;
+	fc[4] = 0;
+	fc[5] = 0;
+	fc[6] = 0;
+	fc[7] = 0;
 };
 
+app.post('/resetBoard', function(req, res) {
+	res.end();
+	reset_board();
+	io.emit('fresh state', boardState);
+});
 
 app.post('/battery', function(req, res) {
 	var batterystate = req.query.state;
@@ -238,14 +259,81 @@ app.post('/hwarm', function(req, res) {
 	var hwarmstate = req.query.state;
 	if (hwarmstate == 'arm') {
 		boardState.arm_switch = 'armed';
-		// TODO if arm sense working?
 		hw_arm = 'ARMED';
 	}
 	else {
 		boardState.arm_switch = 'disarmed';
-		// TODO if arm sense working?
 		hw_arm = 'DISARMED';
 	}
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/armsense', function(req, res) {
+	var armsensestate = req.query.state;
+	if (armsensestate == 'good') {
+		boardState.arm_sense = 'good';
+	}
+	else {
+		boardState.arm_sense = 'bad';
+	}
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/uplink', function(req, res) {
+	var upstate = req.query.state;
+	if (upstate == 'good') {
+		boardState.uplink = 'good';
+	}
+	else {
+		boardState.uplink = 'bad';
+	}
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/downlink', function(req, res) {
+	var downstate = req.query.state;
+	if (downstate == 'good') {
+		boardState.downlink = 'good';
+	}
+	else {
+		boardState.downlink = 'bad';
+	}
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/match_status', function(req, res) {
+	var matchstate = req.query.state;
+	var channel = req.query.channel;
+	boardState.channels[parseInt(channel)].match_status = matchstate;
+	res.end();
+	sync_imps();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/match_response', function(req, res) {
+	var matchstate = req.query.state;
+	var channel = req.query.channel;
+	boardState.channels[parseInt(channel)].match_response = matchstate;
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/match_sense', function(req, res) {
+	var matchstate = req.query.state;
+	var channel = req.query.channel;
+	boardState.channels[parseInt(channel)].match_sense = matchstate;
+	res.end();
+	io.emit('fresh state', boardState);
+});
+
+app.post('/match_fet', function(req, res) {
+	var matchstate = req.query.state;
+	var channel = req.query.channel;
+	boardState.channels[parseInt(channel)].match_fet = matchstate;
 	res.end();
 	io.emit('fresh state', boardState);
 });
@@ -265,7 +353,14 @@ var sendTelem = setInterval(function() {
 	if (boardState.power_switch != 'on') {
 		return;
 	}
+	if (boardState.downlink != 'good') {
+		return;
+	}
 
+	var hw_arm_sense = hw_arm;
+	if (boardState.arm_sense != 'good') {
+		hw_arm_sense = 'DISARMED';
+	}
 
 	// object of options for the post
 	var post_options = {
@@ -277,27 +372,27 @@ var sendTelem = setInterval(function() {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Content-Length': 0,
 			'ID': boardID,
-			'port': port,
+			'port': netPort,
 			'fver': 'MOCK',
 			'sw_arm': sw_arm,
-			'hw_arm': hw_arm,
+			'hw_arm': hw_arm_sense,
 			'wifi_rssi': '0',
-			'r0': m0,
-			'r1': m1,
-			'r2': m2,
-			'r3': m3,
-			'r4': m4,
-			'r5': m5,
-			'r6': m6,
-			'r7': m7,
-			'fc0': fc0,
-			'fc1': fc1,
-			'fc2': fc2,
-			'fc3': fc3,
-			'fc4': fc4,
-			'fc5': fc5,
-			'fc6': fc6,
-			'fc7': fc7,
+			'r0': m[0],
+			'r1': m[1],
+			'r2': m[2],
+			'r3': m[3],
+			'r4': m[4],
+			'r5': m[5],
+			'r6': m[6],
+			'r7': m[7],
+			'fc0': fc[0],
+			'fc1': fc[1],
+			'fc2': fc[2],
+			'fc3': fc[3],
+			'fc4': fc[4],
+			'fc5': fc[5],
+			'fc6': fc[6],
+			'fc7': fc[7],
 			'cc': command_count
 		}
 	};
@@ -318,12 +413,11 @@ var sendTelem = setInterval(function() {
 
 }, 2000);
 
-var httpport = parseInt(port)+1000;
-httpserver.listen(httpport, function() {
-	console.log("HTTP server listening on *:"+httpport);
+httpserver.listen(httpPort, function() {
+	console.log("HTTP server listening on *:"+httpPort);
 });
 
-server.listen(port, () => {
-	console.log("Net server bound on *:" + port);
+server.listen(netPort, () => {
+	console.log("Net server bound on *:" + netPort);
 });
 
