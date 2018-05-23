@@ -87,6 +87,7 @@ const server = net.createServer((c) => {
 			sw_arm = '0';
 		}
 		else if (cmd.startsWith('fire')) {
+			command_count = command_count + 1;
 			if (sw_arm != '1') {
 				console.log('SW DISARMED: will not respect fire command');
 			}
