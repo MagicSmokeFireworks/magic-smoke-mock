@@ -108,7 +108,12 @@ const server = net.createServer((c) => {
 	});
 
 	// repeat data back to client
-	c.pipe(c);
+	if ((boardState.battery == 'connected') && (boardState.power_switch == 'on') && (boardState.uplink == 'good')) {
+		c.pipe(c);
+	}
+	else {
+		c.destroy();
+	}
 
 });
 
